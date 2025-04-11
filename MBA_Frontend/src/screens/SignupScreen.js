@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import axios from 'axios';
+import api from '../services/api';
+
 
 const SignupScreen = ({ navigation }) => {
     const [username, setUsername] = useState('');
@@ -16,9 +18,9 @@ const SignupScreen = ({ navigation }) => {
         };
         console.log('Signup attempt:', payload);
         try {
-            const response = await axios.post('http://192.168.162.82:8081/auth/signup', payload, {
+            const response = await api.post('/auth/signup', payload, {
                 timeout: 5000, // Timeout to catch slow responses
-            });
+            });            
             console.log('Signup response:', response.data);
             Alert.alert('Success', 'Signup successful! Please login.');
             navigation.navigate('Login');

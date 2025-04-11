@@ -9,7 +9,7 @@ const DashboardScreen = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const storedUsername = await AsyncStorage.getItem('username');
+      const storedUsername = await AsyncStorage.getItem('name'); // instead of 'username'
       const storedToken = await AsyncStorage.getItem('token');
       setUsername(storedUsername);
       setToken(storedToken);
