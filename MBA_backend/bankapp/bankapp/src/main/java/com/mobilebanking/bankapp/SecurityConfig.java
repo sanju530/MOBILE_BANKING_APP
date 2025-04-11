@@ -1,4 +1,3 @@
-// src/main/java/com/mobilebanking/bankapp/SecurityConfig.java
 package com.mobilebanking.bankapp;
 
 import org.springframework.context.annotation.Bean;
@@ -16,8 +15,11 @@ public class SecurityConfig {
                 registry.addMapping("/**")
                         .allowedOrigins("http://192.168.43.134:8081", "http://localhost:19006")
                         .allowedMethods("GET", "POST", "PUT", "DELETE")
-                        .allowedHeaders("*");
+                        .allowedHeaders("*")
+                        .allowCredentials(true); // 👈 Important for Authorization header
             }
         };
     }
 }
+
+
