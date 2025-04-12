@@ -1,37 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Alert } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
-import api from '../services/api';
-import { GlobalStyles } from '../styles/GlobalStyles';
+// src/screens/ReceiveMoney.js
+import React from 'react';
+import { View, Text, Image, StyleSheet } from 'react-native';
 
-const ReceiveScreen = ({ route }) => {
-    const { accountId } = route.params;
-    const [upiId, setUpiId] = useState('');
-
-    useEffect(() => {
-        const fetchUpiId = async () => {
-            try {
-                const response = await api.get(`/transactions/upi/qr/${accountId}`);
-                setUpiId(response.data.upiId);
-            } catch (error) {
-                Alert.alert('Error', 'Failed to fetch UPI ID');
-            }
-        };
-        fetchUpiId();
-    }, [accountId]);
-
-    return (
-        <View style={GlobalStyles.container}>
-            {upiId ? (
-                <>
-                    <Text>Your UPI ID: {upiId}</Text>
-                    <QRCode value={upiId} size={200} />
-                </>
-            ) : (
-                <Text>Loading...</Text>
-            )}
-        </View>
-    );
+const ReceiveMoney = () => {
+  return (
+    <View style={styles.container}>
+    <Text style={styles.title}>Receive Money</Text>
+    <Image
+      source={{ uri: 'https://via.placeholder.com/200?text=QR+Code' }} // Replace with actual QR code
+      style={styles.qrCode}
+    />
+  </View>
+  );
 };
 
-export default ReceiveScreen;
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f4f8' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#2c3e50' },
+  qrCode: { width: 200, height: 200, borderRadius: 10 },
+});
+
+export default ReceiveMoney;
