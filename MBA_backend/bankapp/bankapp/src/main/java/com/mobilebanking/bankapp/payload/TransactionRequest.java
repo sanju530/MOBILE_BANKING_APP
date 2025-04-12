@@ -1,25 +1,25 @@
 package com.mobilebanking.bankapp.payload;
 
 public class TransactionRequest {
-    private Long fromAccountId;
-    private Long toAccountId;
+    private String fromAccountNumber;
+    private String toAccountNumber;
     private double amount;
 
     // Getters & Setters
-    public Long getFromAccountId() {
-        return fromAccountId;
+    public String getFromAccountNumber() {
+        return fromAccountNumber;
     }
 
-    public void setFromAccountId(Long fromAccountId) {
-        this.fromAccountId = fromAccountId;
+    public void setFromAccountNumber(String fromAccountNumber) {
+        this.fromAccountNumber = fromAccountNumber;
     }
 
-    public Long getToAccountId() {
-        return toAccountId;
+    public String getToAccountNumber() {
+        return toAccountNumber;
     }
 
-    public void setToAccountId(Long toAccountId) {
-        this.toAccountId = toAccountId;
+    public void setToAccountNumber(String toAccountNumber) {
+        this.toAccountNumber = toAccountNumber;
     }
 
     public double getAmount() {

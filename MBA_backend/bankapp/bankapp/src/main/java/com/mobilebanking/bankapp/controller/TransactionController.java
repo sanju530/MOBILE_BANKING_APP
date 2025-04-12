@@ -3,9 +3,9 @@ package com.mobilebanking.bankapp.controller;
 import com.mobilebanking.bankapp.payload.TransactionRequest;
 import com.mobilebanking.bankapp.model.BankAccount;
 import com.mobilebanking.bankapp.repository.BankAccountRepository;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/transaction")
@@ -16,10 +16,12 @@ public class TransactionController {
 
     @PostMapping("/pay")
     public ResponseEntity<?> pay(@RequestBody TransactionRequest req) {
-        BankAccount from = accountRepo.findById(req.getFromAccountId()).orElse(null);
-        BankAccount to = accountRepo.findById(req.getToAccountId()).orElse(null);
+        BankAccount from = accountRepo.findByAccountNumber(req.getFromAccountNumber());
+        BankAccount to = accountRepo.findByAccountNumber(req.getToAccountNumber());
 
-        if (from == null || to == null) return ResponseEntity.badRequest().body("Invalid account ID");
+        if (from == null || to == null) {
+            return ResponseEntity.badRequest().body("Invalid account number");
+        }
 
         if (from.getBalance() < req.getAmount()) {
             return ResponseEntity.badRequest().body("Insufficient funds");
@@ -36,6 +38,10 @@ public class TransactionController {
 
     @GetMapping("/receive/{accountId}")
     public String generateQRCode(@PathVariable Long accountId) {
-        return "upi://pay?pa=user@bank&pn=User&tid=" + accountId;
+        BankAccount account = accountRepo.findById(accountId).orElse(null);
+        if (account == null) {
+            return "Invalid account ID";
+        }
+        return "upi://pay?pa=" + account.getAccountNumber() + "&pn=" + account.getUser().getName() + "&tid=" + accountId;
     }
 }

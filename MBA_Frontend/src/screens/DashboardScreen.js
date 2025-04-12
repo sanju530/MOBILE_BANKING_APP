@@ -102,8 +102,8 @@ const DashboardScreen = () => {
         <Text style={styles.buttonText}>Accounts</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FundTransfer')}>
-          <Text style={styles.buttonText}>Fund Transfer</Text>
-        </TouchableOpacity>
+        <Text style={styles.buttonText}>Fund Transfer</Text>
+      </TouchableOpacity>
 
         {/* Bottom Scan QR Button (Inspired by Image) */}
         <TouchableOpacity
