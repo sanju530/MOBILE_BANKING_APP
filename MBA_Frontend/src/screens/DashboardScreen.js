@@ -95,14 +95,11 @@ const DashboardScreen = () => {
         <Text style={styles.welcomeText}>
           Welcome to {username ? username : 'User'}'s Dashboard
         </Text>
-        <Text>Token: {token || 'Loading...'}</Text>
+        {/* <Text>Token: {token || 'Loading...'}</Text> */}
 
         {/* Dashboard Buttons */}
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Accounts')}>
-          <Text style={styles.buttonText}>Accounts</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CheckBalance')}>
-          <Text style={styles.buttonText}>Check Balance</Text>
+        <Text style={styles.buttonText}>Accounts</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FundTransfer')}>
           <Text style={styles.buttonText}>Fund Transfer</Text>

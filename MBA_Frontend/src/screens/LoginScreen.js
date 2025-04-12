@@ -20,7 +20,7 @@ const LoginScreen = ({ navigation }) => {
       });
   
       console.log('Login response:', response.data);
-      const { token, name } = response.data;
+      const { token, name ,userId} = response.data;
   
       if (!token || !name) {
         throw new Error("Invalid response from server");
@@ -28,6 +28,7 @@ const LoginScreen = ({ navigation }) => {
   
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('username', name);
+      await AsyncStorage.setItem('userId', userId.toString());
       Alert.alert('Success', 'Login successful!');
       navigation.navigate('Dashboard');
     } catch (error) {

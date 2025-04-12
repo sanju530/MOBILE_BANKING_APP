@@ -32,6 +32,6 @@ public class AuthService {
         if (!user.getPassword().equals(password)) {
             throw new RuntimeException("Invalid password");
         }
-        return new LoginResponse("jwt-token-dummy", user.getName());
+        return new LoginResponse("jwt-token-dummy",user.getName(), user.getId());
     }
 }

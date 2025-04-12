@@ -4,10 +4,12 @@ package com.mobilebanking.bankapp.model;
 public class LoginResponse {
     private String token;
     private String name;
+    private Long userId;
 
-    public LoginResponse(String token, String name) {
+    public LoginResponse(String token, String name, Long userId) {
         this.token = token;
         this.name = name;
+        this.userId = userId; // Now correctly assigns the parameter
     }
 
     // Getters
@@ -17,6 +19,10 @@ public class LoginResponse {
 
     public String getName() {
         return name;
+    }
+
+    public Long getUserId() {
+        return userId;
     }
 
     // Setters (optional, if needed)

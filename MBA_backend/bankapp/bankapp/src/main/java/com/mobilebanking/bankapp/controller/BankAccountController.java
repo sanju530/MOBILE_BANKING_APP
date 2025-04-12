@@ -18,7 +18,7 @@ public class BankAccountController {
 
     @PostMapping("/add")
     public BankAccount addAccount(@RequestBody BankAccount account) {
-        account.setBalance(10000); // dummy value
+        account.setBalance(0); // dummy value
         return accountRepo.save(account);
     }
 
