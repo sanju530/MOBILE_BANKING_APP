@@ -16,7 +16,7 @@ const SelfTransferScreen = () => {
     const fetchAccounts = async () => {
       try {
         const userId = await AsyncStorage.getItem('userId');
-        const response = await api.get(`/account/user/${userId}`); // Adjust endpoint if needed
+        const response = await api.get(`/account/user/${userId}`);
         setAccounts(response.data);
       } catch (error) {
         Alert.alert('Error', 'Failed to load accounts');
@@ -28,6 +28,10 @@ const SelfTransferScreen = () => {
   const handleTransfer = async () => {
     if (!fromAccount || !toAccount || !amount || parseFloat(amount) <= 0) {
       Alert.alert('Error', 'Please select accounts and enter a valid amount');
+      return;
+    }
+    if (fromAccount.id === toAccount.id) {
+      Alert.alert('Error', 'From and To accounts cannot be the same');
       return;
     }
     try {
@@ -44,12 +48,21 @@ const SelfTransferScreen = () => {
     }
   };
 
-  const renderAccount = ({ item }) => (
+  const renderFromAccount = ({ item }) => (
     <TouchableOpacity
-      style={styles.accountItem}
-      onPress={() => (fromAccount ? setToAccount(item) : setFromAccount(item))}
+      style={[styles.accountItem, fromAccount?.id === item.id && styles.selectedItem]}
+      onPress={() => setFromAccount(item)}
     >
-      <Text>{item.bankName} - {item.accountNumber} (₹{item.balance})</Text>
+      <Text>{item.bankName} - {item.accountNumber} </Text>
+    </TouchableOpacity>
+  );
+
+  const renderToAccount = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.accountItem, toAccount?.id === item.id && styles.selectedItem]}
+      onPress={() => setToAccount(item)}
+    >
+      <Text>{item.bankName} - {item.accountNumber} </Text>
     </TouchableOpacity>
   );
 
@@ -58,7 +71,7 @@ const SelfTransferScreen = () => {
       <Text style={styles.title}>Select From Account</Text>
       <FlatList
         data={accounts}
-        renderItem={renderAccount}
+        renderItem={renderFromAccount}
         keyExtractor={(item) => item.id.toString()}
       />
       {fromAccount && (
@@ -66,7 +79,7 @@ const SelfTransferScreen = () => {
           <Text style={styles.title}>Select To Account</Text>
           <FlatList
             data={accounts.filter((acc) => acc.id !== fromAccount.id)}
-            renderItem={renderAccount}
+            renderItem={renderToAccount}
             keyExtractor={(item) => item.id.toString()}
           />
         </>
@@ -89,6 +102,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#ecf0f1' },
   title: { fontSize: 18, fontWeight: 'bold', marginVertical: 10 },
   accountItem: { padding: 10, backgroundColor: '#fff', marginBottom: 5, borderRadius: 5 },
+  selectedItem: { backgroundColor: '#d3e0ea' },
   input: { height: 40, borderColor: '#ccc', borderWidth: 1, marginBottom: 20, paddingHorizontal: 10 },
   button: { backgroundColor: '#3498db', padding: 15, borderRadius: 8 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
