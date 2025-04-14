@@ -2,15 +2,25 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const api = axios.create({
-    baseURL: 'http://192.168.1.15:8080',    // Replace with your local IP
+  baseURL: 'http://192.168.43.134:8080', // Verify this IP
 });
 
 api.interceptors.request.use(async (config) => {
-    const token = await AsyncStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+  const token = await AsyncStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+    console.log('Interceptor - Added Authorization header with token');
+  }
+  const userId = await AsyncStorage.getItem('userId');
+  if (userId) {
+    config.headers['User-Id'] = userId;
+    console.log('Interceptor - Added User-Id header:', userId);
+  }
+  console.log('Request URL:', config.baseURL + config.url); // Full URL
+  return config;
+}, (error) => {
+  console.log('Interceptor Error:', error);
+  return Promise.reject(error);
 });
 
 export default api;

@@ -1,4 +1,3 @@
-// src/screens/DashboardScreen.js
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
@@ -20,7 +19,7 @@ const DashboardScreen = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const storedUsername = await AsyncStorage.getItem('username'); // Changed back to 'username' for consistency with prior login setup
+      const storedUsername = await AsyncStorage.getItem('username'); // Consistent with login setup
       const storedToken = await AsyncStorage.getItem('token');
       setUsername(storedUsername);
       setToken(storedToken);
@@ -91,24 +90,23 @@ const DashboardScreen = () => {
         {/* Header */}
         <Text style={styles.headerText}>Hello, {username ? `\n${username}` : 'User'}</Text>
 
-        {/* Original Content */}
+        {/* Welcome Text */}
         <Text style={styles.welcomeText}>
           Welcome to {username ? username : 'User'}'s Dashboard
         </Text>
-        {/* <Text>Token: {token || 'Loading...'}</Text> */}
 
         {/* Dashboard Buttons */}
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Accounts')}>
-        <Text style={styles.buttonText}>Accounts</Text>
+          <Text style={styles.buttonText}>Accounts</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FundTransfer')}>
-        <Text style={styles.buttonText}>Fund Transfer</Text>
-      </TouchableOpacity>
+          <Text style={styles.buttonText}>Fund Transfer</Text>
+        </TouchableOpacity>
 
-        {/* Bottom Scan QR Button (Inspired by Image) */}
+        {/* Bottom Scan QR Button */}
         <TouchableOpacity
           style={styles.scanQRButton}
-          onPress={() => navigation.navigate('ScanQR')}
+          onPress={() => navigation.navigate('ScanQR')} // Points to QRScanner via App.js
         >
           <Image source={require('../../assets/qr_icon.jpeg')} style={styles.qrIcon} />
           <Text style={styles.scanQRText}>SCAN QR</Text>
