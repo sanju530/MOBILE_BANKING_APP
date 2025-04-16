@@ -102,7 +102,9 @@ const DashboardScreen = () => {
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FundTransfer')}>
           <Text style={styles.buttonText}>Fund Transfer</Text>
         </TouchableOpacity>
-
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BankAccountList')}>
+          <Text style={styles.buttonText}>Apply Loan</Text>
+        </TouchableOpacity>
         {/* Bottom Scan QR Button */}
         <TouchableOpacity
           style={styles.scanQRButton}

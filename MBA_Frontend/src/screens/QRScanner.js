@@ -31,23 +31,29 @@ const QRScanner = () => {
         console.log('Making API call to /account/' + data); // Confirm URL
         const response = await api.get(`/account/${data}`);
         console.log('API Response:', response.data);
-        const { accountNumber, userName } = response.data;
-  
-        if (!accountNumber || !userName) {
+        const { accountNumber } = response.data;
+
+        if (!accountNumber) {
           Alert.alert('Error', 'Invalid account data received.');
           setScanned(false);
           return;
         }
-  
-        const lastFourDigits = accountNumber.slice(-4);
+
         navigation.navigate('PaymentScreen', {
           toAccountNumber: accountNumber,
-          recipientName: userName,
-          displayAccount: `****${lastFourDigits}`,
+          displayAccount: `****${accountNumber.slice(-4)}`,
         });
       } catch (error) {
         console.log('API Error:', error.message);
-        Alert.alert('Error', 'Failed to fetch account details.');
+        if (error.response) {
+          console.log('Response Status:', error.response.status);
+          console.log('Response Data:', error.response.data);
+        } else if (error.request) {
+          console.log('No response received:', error.request);
+        } else {
+          console.log('Error:', error.message);
+        }
+        Alert.alert('Error', 'Failed to fetch account details: ' + error.message);
         setScanned(false);
       }
     }

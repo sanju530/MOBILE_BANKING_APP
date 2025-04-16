@@ -12,6 +12,8 @@ import SelfTransferScreen from './src/screens/SelfTransferScreen';
 import TransferToOthersScreen from './src/screens/TransferToOthersScreen';
 import QRScanner from './src/screens/QRScanner'; // Update to use QRScanner (we'll rename the file)
 import PaymentScreen from './src/screens/PaymentScreen';
+import BankAccountList from './src/screens/BankAccountList';
+import LoanApplication from './src/screens/LoanApplication';
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +31,8 @@ const App = () => {
         <Stack.Screen name="TransferToOthers" component={TransferToOthersScreen} options={{ title: 'Transfer to Others' }} />
         <Stack.Screen name="ScanQR" component={QRScanner} options={{ title: 'Scan QR Code' }} />
         <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ title: 'Make Payment' }} />
+        <Stack.Screen name="BankAccountList" component={BankAccountList} />
+        <Stack.Screen name="LoanApplication" component={LoanApplication} />
       </Stack.Navigator>
     </NavigationContainer>
   );

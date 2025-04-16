@@ -9,7 +9,7 @@ const PaymentScreen = () => {
   const [fromAccountNumber, setFromAccountNumber] = useState('');
   const navigation = useNavigation();
   const route = useRoute();
-  const { toAccountNumber, recipientName } = route.params;
+  const { toAccountNumber, displayAccount } = route.params;
 
   useEffect(() => {
     const fetchUserAccount = async () => {
@@ -47,7 +47,7 @@ const PaymentScreen = () => {
         amount: parseFloat(amount),
       };
       const response = await api.post('/transaction/pay', payload);
-      Alert.alert('Success', 'Payment successful!');
+      Alert.alert('Success', 'Payment successful! Balance updated.');
       navigation.navigate('Dashboard');
     } catch (error) {
       Alert.alert('Error', error.response?.data || 'Payment failed.');
@@ -57,8 +57,7 @@ const PaymentScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Make a Payment</Text>
-      <Text style={styles.label}>Recipient: {recipientName}</Text>
-      <Text style={styles.label}>Account Number: {toAccountNumber}</Text>
+      <Text style={styles.label}>Account Number: {displayAccount}</Text> {/* Removed recipientName */}
       <Text style={styles.label}>From Account: {fromAccountNumber || 'Loading...'}</Text>
       <TextInput
         style={styles.input}

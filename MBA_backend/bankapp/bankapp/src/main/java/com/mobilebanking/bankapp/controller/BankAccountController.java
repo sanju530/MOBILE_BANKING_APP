@@ -18,9 +18,13 @@ public class BankAccountController {
     private BankAccountRepository accountRepo;
 
     @PostMapping("/add")
-    public BankAccount addAccount(@RequestBody BankAccount account) {
-        account.setBalance(0); // dummy value
-        return accountRepo.save(account);
+    public ResponseEntity<String> addAccount(@RequestBody BankAccount account) {
+        if (account.getBankName() == null || account.getAccountNumber() == null) {
+            return ResponseEntity.badRequest().body("Bank name and account number are required");
+        }
+        account.setBalance(0); // Default balance
+        accountRepo.save(account);
+        return ResponseEntity.ok("Account added successfully");
     }
 
     @GetMapping("/user/{userId}")
@@ -78,12 +82,7 @@ public class BankAccountController {
             this.userName = userName;
         }
 
-        public String getAccountNumber() {
-            return accountNumber;
-        }
-
-        public String getUserName() {
-            return userName;
-        }
+        public String getAccountNumber() { return accountNumber; }
+        public String getUserName() { return userName; }
     }
 }
