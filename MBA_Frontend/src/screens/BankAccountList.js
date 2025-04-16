@@ -17,7 +17,13 @@ const BankAccountList = () => {
           return;
         }
         const response = await api.get(`/account/user/${userId}`);
-        setAccounts(response.data);
+        if (response.data.length === 0) {
+          navigation.navigate('AddAccountScreen', {
+            message: 'Please add a bank account to apply for a loan.'
+          });
+        } else {
+          setAccounts(response.data);
+        }
       } catch (error) {
         console.error('Error fetching accounts:', error);
       }
@@ -64,16 +70,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 8,
     elevation: 2,
-    justifyContent: 'space-between', // Ensure space between top text and bottom button
-    flexDirection: 'column', // Vertical layout
-    height: 100, // Fixed height to ensure button stays at bottom
+    justifyContent: 'space-between',
+    flexDirection: 'column',
+    height: 100,
   },
   accountInfo: {
     fontSize: 18,
     color: '#1f2937',
     fontWeight: '500',
-    textAlign: 'center', // Center the text
-    marginBottom: 20, // Space between text and button
+    textAlign: 'center',
+    marginBottom: 20,
   },
   emptyText: {
     textAlign: 'center',

@@ -13,7 +13,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://192.168.162.82:8081", "http://localhost:19006")
+                        .allowedOrigins("http://192.168.43.134:8081", "http://localhost:19006")
                         .allowedMethods("GET", "POST", "PUT", "DELETE")
                         .allowedHeaders("*")
                         .allowCredentials(true); // 👈 Important for Authorization header
