@@ -1,4 +1,3 @@
-// App.js
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,10 +9,14 @@ import AddAccountScreen from './src/screens/AddAccountScreen';
 import FundTransferScreen from './src/screens/FundTransferScreen';
 import SelfTransferScreen from './src/screens/SelfTransferScreen';
 import TransferToOthersScreen from './src/screens/TransferToOthersScreen';
-import QRScanner from './src/screens/QRScanner'; // Update to use QRScanner (we'll rename the file)
+import QRScanner from './src/screens/QRScanner';
 import PaymentScreen from './src/screens/PaymentScreen';
 import BankAccountList from './src/screens/BankAccountList';
 import LoanApplication from './src/screens/LoanApplication';
+import ProfileScreen from './src/screens/ProfileScreen';
+import ReceiveMoneyScreen from './src/screens/ReceiveMoneyScreen';
+import FeedbackScreen from './src/screens/FeedbackScreen';
+import RateUsScreen from './src/screens/RateUsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +36,10 @@ const App = () => {
         <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ title: 'Make Payment' }} />
         <Stack.Screen name="BankAccountList" component={BankAccountList} />
         <Stack.Screen name="LoanApplication" component={LoanApplication} />
+        <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+        <Stack.Screen name="ReceiveMoney" component={ReceiveMoneyScreen} options={{ title: 'Receive Money' }} />
+        <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ title: 'Feedback' }} />
+        <Stack.Screen name="RateUs" component={RateUsScreen} options={{ title: 'Rate Us' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -23,7 +23,7 @@ const QRScanner = () => {
     );
   }
 
-  const handleScan = async ({ data }) => {
+  const handleScan = async ({ data , type }) => {
     if (!scanned) {
       setScanned(true);
       console.log('Scanning QR code, data:', data);

@@ -1,10 +1,8 @@
-// src/screens/LoginScreen.js
 import React, { useState } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
-
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -20,7 +18,7 @@ const LoginScreen = ({ navigation }) => {
       });
   
       console.log('Login response:', response.data);
-      const { token, name ,userId} = response.data;
+      const { token, name, userId } = response.data;
   
       if (!token || !name) {
         throw new Error("Invalid response from server");
@@ -29,6 +27,7 @@ const LoginScreen = ({ navigation }) => {
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('username', name);
       await AsyncStorage.setItem('userId', userId.toString());
+      await AsyncStorage.setItem('email', email); // Added this line to store the login email
       Alert.alert('Success', 'Login successful!');
       navigation.navigate('Dashboard');
     } catch (error) {

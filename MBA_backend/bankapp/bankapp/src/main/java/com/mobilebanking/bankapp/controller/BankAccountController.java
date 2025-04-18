@@ -2,7 +2,11 @@ package com.mobilebanking.bankapp.controller;
 
 import com.mobilebanking.bankapp.model.BankAccount;
 import com.mobilebanking.bankapp.repository.BankAccountRepository;
+import com.mobilebanking.bankapp.dto.BankAccountDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +18,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/account")
 public class BankAccountController {
 
+    private static final Logger logger = LoggerFactory.getLogger(BankAccountController.class);
+
     @Autowired
     private BankAccountRepository accountRepo;
 
@@ -22,25 +28,58 @@ public class BankAccountController {
         if (account.getBankName() == null || account.getAccountNumber() == null) {
             return ResponseEntity.badRequest().body("Bank name and account number are required");
         }
-        account.setBalance(0); // Default balance
+        Random random = new Random();
+        double randomBalance = 500 + (random.nextDouble() * 9500);
+        account.setBalance(randomBalance);
         accountRepo.save(account);
+        logger.info("Account added successfully for accountNumber: {}", account.getAccountNumber());
         return ResponseEntity.ok("Account added successfully");
     }
 
     @GetMapping("/user/{userId}")
-    public List<BankAccount> getUserAccounts(@PathVariable Long userId) {
-        return accountRepo.findByUserId(userId);
+    public ResponseEntity<List<BankAccountDTO>> getUserAccounts(@PathVariable Long userId) {
+        logger.info("Fetching accounts for userId: {}", userId);
+        try {
+            List<BankAccount> accounts = accountRepo.findByUser_Id(userId);
+            if (accounts.isEmpty()) {
+                logger.warn("No accounts found for userId: {}", userId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+            List<BankAccountDTO> dtos = accounts.stream()
+                    .map(account -> new BankAccountDTO(
+                            account.getId(),
+                            account.getAccountNumber(),
+                            account.getBalance(),
+                            account.getBankCode(),
+                            account.getBankName()))
+                    .collect(Collectors.toList());
+            logger.info("Found {} accounts for userId: {}", dtos.size(), userId);
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            logger.error("Error fetching accounts for userId {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @GetMapping("/{accountId}/balance")
-    public ResponseEntity<?> getBalance(@PathVariable Long accountId) {
+    public ResponseEntity<Object> getBalance(@PathVariable Long accountId) {
         return accountRepo.findById(accountId)
-                .map(account -> ResponseEntity.ok(account.getBalance()))
-                .orElse(ResponseEntity.notFound().build());
+                .map(account -> ResponseEntity.ok((Object) account.getBalance()))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found"));
+    }
+
+    @DeleteMapping("/{accountId}")
+    public ResponseEntity<String> deleteAccount(@PathVariable Long accountId) {
+        if (accountRepo.existsById(accountId)) {
+            accountRepo.deleteById(accountId);
+            logger.info("Account deleted successfully for accountId: {}", accountId);
+            return ResponseEntity.ok("Account deleted successfully");
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
     }
 
     @GetMapping("/random")
-    public ResponseEntity<?> getRandomAccount(@RequestHeader("User-Id") Long loggedInUserId) {
+    public ResponseEntity<Object> getRandomAccount(@RequestHeader("User-Id") Long loggedInUserId) {
         List<BankAccount> allAccounts = accountRepo.findAll();
         List<BankAccount> otherAccounts = allAccounts.stream()
                 .filter(account -> !account.getUser().getId().equals(loggedInUserId))
@@ -59,10 +98,10 @@ public class BankAccountController {
     }
 
     @GetMapping("/account/{accountNumber}")
-    public ResponseEntity<?> getAccountByNumber(@PathVariable String accountNumber, @RequestHeader("User-Id") Long loggedInUserId) {
+    public ResponseEntity<Object> getAccountByNumber(@PathVariable String accountNumber, @RequestHeader("User-Id") Long loggedInUserId) {
         BankAccount account = accountRepo.findByAccountNumber(accountNumber);
         if (account == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
         }
         if (account.getUser().getId().equals(loggedInUserId)) {
             return ResponseEntity.badRequest().body("Cannot pay to your own account");
