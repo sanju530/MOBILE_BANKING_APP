@@ -48,7 +48,6 @@ const DashboardScreen = () => {
 
   const menuItems = useMemo(() => [
     { id: '1', title: 'Profile', icon: require('../../assets/profile_icon.jpg'), onPress: () => { navigation.navigate('Profile'); closeDrawerSafely(); } },
-    { id: '2', title: 'Home', icon: require('../../assets/home_icon.jpeg'), onPress: () => { navigation.navigate('Dashboard'); closeDrawerSafely(); } },
     { id: '3', title: 'Receive Money', icon: require('../../assets/qr_icon.jpeg'), onPress: () => { navigation.navigate('ReceiveMoney'); closeDrawerSafely(); } },
     { id: '4', title: 'Feedback', icon: require('../../assets/feedback_icon.jpeg'), onPress: () => { navigation.navigate('Feedback'); closeDrawerSafely(); } },
     { id: '5', title: 'Rate Us', icon: require('../../assets/star_icon.png'), onPress: () => { navigation.navigate('RateUs'); closeDrawerSafely(); } },
@@ -105,15 +104,17 @@ const DashboardScreen = () => {
         <Text style={styles.welcomeText}>
           Welcome to {username ? username : 'User'}'s Dashboard
         </Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Accounts')}>
-          <Text style={styles.buttonText}>Accounts</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FundTransfer')}>
-          <Text style={styles.buttonText}>Fund Transfer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BankAccountList')}>
-          <Text style={styles.buttonText}>Apply Loan</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Accounts')}>
+            <Text style={styles.buttonText}>Accounts</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FundTransfer')}>
+            <Text style={styles.buttonText}>Fund Transfer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BankAccountList')}>
+            <Text style={styles.buttonText}>Apply Loan</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
           style={styles.scanQRButton}
           onPress={() => navigation.navigate('ScanQR')}
@@ -129,80 +130,91 @@ const DashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 16,
     backgroundColor: '#f0f4f8',
+    justifyContent: 'space-between',
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 20,
     color: '#2c3e50',
+    textAlign: 'center',
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    padding: 10,
+    padding: 15,
     backgroundColor: '#fff',
-    elevation: 4,
-    borderBottomWidth: 1,
+    elevation: 6,
+    borderBottomWidth: 2,
     borderBottomColor: '#ddd',
+    borderRadius: 10,
   },
   menuIconText: {
-    fontSize: 30,
+    fontSize: 32,
     color: '#2c3e50',
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     resizeMode: 'contain',
   },
   headerText: {
-    fontSize: 28,
-    fontWeight: '600',
+    fontSize: 32,
+    fontWeight: '700',
     color: '#2980b9',
     textAlign: 'center',
-    marginTop: 60,
-    marginBottom: 20,
+    marginVertical: 20,
+  },
+  buttonContainer: {
+    width: '90%',
+    alignItems: 'center',
+    marginVertical: 20,
   },
   button: {
     backgroundColor: '#3498db',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
     borderRadius: 25,
-    marginVertical: 10,
-    width: '80%',
+    marginVertical: 12,
+    width: '100%',
     alignItems: 'center',
-    elevation: 2,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
   },
   scanQRButton: {
     flexDirection: 'row',
     backgroundColor: '#1abc9c',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    position: 'absolute',
-    bottom: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderRadius: 30,
     alignItems: 'center',
-    elevation: 5,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   qrIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 8,
+    width: 24,
+    height: 24,
+    marginRight: 12,
   },
   scanQRText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
   },
   drawerContainer: {
     flex: 1,
@@ -211,35 +223,36 @@ const styles = StyleSheet.create({
   drawerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
+    padding: 25,
+    borderBottomWidth: 2,
     borderBottomColor: '#ecf0f1',
+    backgroundColor: '#f0f4f8',
   },
   profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
   },
   drawerUsername: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
+    padding: 18,
     borderBottomWidth: 1,
     borderBottomColor: '#ecf0f1',
   },
   menuIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
+    width: 24,
+    height: 24,
+    marginRight: 12,
   },
   menuText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#2c3e50',
   },
 });
