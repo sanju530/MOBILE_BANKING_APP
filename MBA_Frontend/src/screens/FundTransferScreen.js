@@ -1,4 +1,3 @@
-// src/screens/FundTransferScreen.js
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +19,7 @@ const FundTransferScreen = () => {
       >
         <Text style={styles.buttonText}>Transfer to Others</Text>
       </TouchableOpacity>
+      
     </View>
   );
 };

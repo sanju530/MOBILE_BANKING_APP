@@ -3,11 +3,11 @@ package com.mobilebanking.bankapp.controller;
 import com.mobilebanking.bankapp.model.BankAccount;
 import com.mobilebanking.bankapp.model.Feedback;
 import com.mobilebanking.bankapp.model.TransactionHistory;
-import com.mobilebanking.bankapp.model.User;
+import com.mobilebanking.bankapp.payload.TransactionRequest;
 import com.mobilebanking.bankapp.repository.BankAccountRepository;
 import com.mobilebanking.bankapp.repository.FeedbackRepository;
 import com.mobilebanking.bankapp.repository.TransactionHistoryRepository;
-import com.mobilebanking.bankapp.dto.TransactionHistoryDTO; // New DTO
+import com.mobilebanking.bankapp.dto.TransactionHistoryDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,30 +46,52 @@ public class FeedbackAndTransactionController {
 
     @PostMapping("/transaction")
     @Transactional
-    public ResponseEntity<String> addTransaction(@RequestBody TransactionHistory transaction) {
-        logger.info("Received transaction request: {}", transaction);
-        if (transaction.getUserId() == null || transaction.getAmount() <= 0) {
+    public ResponseEntity<String> addTransaction(@RequestBody TransactionRequest request) {
+        logger.info("Received transaction request: {}", request);
+
+        if (request.getUserId() == null || request.getAmount() <= 0) {
             logger.error("Invalid transaction data: User ID or amount invalid");
             return ResponseEntity.badRequest().body("User ID and valid amount are required");
         }
 
+        // Map TransactionRequest to TransactionHistory
+        TransactionHistory transaction = new TransactionHistory();
+        transaction.setUserId(request.getUserId());
+        transaction.setAmount(request.getAmount());
+        transaction.setTransactionType(request.getTransactionType());
+        transaction.setStatus("COMPLETED");
+
         BankAccount fromAccount = null;
         BankAccount toAccount = null;
 
-        if (transaction.getFromAccountId() != null) {
-            fromAccount = accountRepo.findById(transaction.getFromAccountId()).orElse(null);
-            if (fromAccount == null) {
-                logger.error("Invalid source account ID: {}", transaction.getFromAccountId());
-                return ResponseEntity.badRequest().body("Invalid source account ID");
+        // Map fromAccountNumber to fromAccountId
+        if (request.getFromAccountNumber() != null) {
+            fromAccount = accountRepo.findByAccountNumber(request.getFromAccountNumber())
+                    .orElse(null);
+            if (fromAccount != null) {
+                transaction.setFromAccountId(fromAccount.getId());
             }
-            if (fromAccount.getBalance() < transaction.getAmount()) {
-                logger.error("Insufficient balance in account {}: {}", transaction.getFromAccountId(), fromAccount.getBalance());
-                return ResponseEntity.badRequest().body("Insufficient balance");
+        }
+        if (fromAccount == null) {
+            logger.error("Invalid source account number: {}", request.getFromAccountNumber());
+            return ResponseEntity.badRequest().body("Invalid source account number");
+        }
+        if (fromAccount.getBalance() < request.getAmount()) {
+            logger.error("Insufficient balance in account {}: {}", fromAccount.getId(), fromAccount.getBalance());
+            return ResponseEntity.badRequest().body("Insufficient balance");
+        }
+
+        // Map toAccountNumber to toAccountId
+        if (request.getToAccountNumber() != null) {
+            toAccount = accountRepo.findByAccountNumber(request.getToAccountNumber())
+                    .orElse(null);
+            if (toAccount != null) {
+                transaction.setToAccountId(toAccount.getId());
             }
         }
 
         try {
-            if ("SELF_TRANSFER".equals(transaction.getTransactionType())) {
+            if ("SELF_TRANSFER".equals(request.getTransactionType())) {
                 if (transaction.getToAccountId() == null) {
                     logger.error("To account ID is required for self-transfer");
                     return ResponseEntity.badRequest().body("To account ID is required for self-transfer");
@@ -79,15 +102,15 @@ public class FeedbackAndTransactionController {
                     return ResponseEntity.badRequest().body("Invalid destination account ID");
                 }
                 if (!fromAccount.getUser().getId().equals(toAccount.getUser().getId()) || !fromAccount.getUser().getId().equals(transaction.getUserId())) {
-                    logger.error("Accounts do not belong to the same user");
-                    return ResponseEntity.badRequest().body("Both accounts must belong to the same user");
+                    logger.error("Accounts do not belong to the same user for self-transfer");
+                    return ResponseEntity.badRequest().body("Both accounts must belong to the same user for self-transfer");
                 }
-                fromAccount.setBalance(fromAccount.getBalance() - transaction.getAmount());
-                toAccount.setBalance(toAccount.getBalance() + transaction.getAmount());
+                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
+                toAccount.setBalance(toAccount.getBalance() + request.getAmount());
                 accountRepo.saveAndFlush(fromAccount);
                 accountRepo.saveAndFlush(toAccount);
-                logger.info("Self-transfer completed: From {} to {}, Amount: {}", fromAccount.getId(), toAccount.getId(), transaction.getAmount());
-            } else if ("TRANSFER_TO_OTHERS".equals(transaction.getTransactionType())) {
+                logger.info("Self-transfer completed: From {} to {}, Amount: {}", fromAccount.getId(), toAccount.getId(), request.getAmount());
+            } else if ("TRANSFER_TO_OTHERS".equals(request.getTransactionType())) {
                 if (transaction.getToAccountId() == null) {
                     logger.error("To account ID is required for transfer to others");
                     return ResponseEntity.badRequest().body("To account ID is required for transfer to others");
@@ -97,26 +120,29 @@ public class FeedbackAndTransactionController {
                     logger.error("Invalid destination account ID: {}", transaction.getToAccountId());
                     return ResponseEntity.badRequest().body("Invalid destination account ID");
                 }
-                fromAccount.setBalance(fromAccount.getBalance() - transaction.getAmount());
-                toAccount.setBalance(toAccount.getBalance() + transaction.getAmount());
+                // Allow transfer to other users
+                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
+                toAccount.setBalance(toAccount.getBalance() + request.getAmount());
                 accountRepo.saveAndFlush(fromAccount);
                 accountRepo.saveAndFlush(toAccount);
-                logger.info("Transfer to others completed: From {} to {}, Amount: {}", fromAccount.getId(), toAccount.getId(), transaction.getAmount());
-            } else if ("UPI".equals(transaction.getTransactionType())) {
+                logger.info("Transfer to others completed: From {} to {}, Amount: {}", fromAccount.getId(), toAccount.getId(), request.getAmount());
+            } else if ("UPI".equals(request.getTransactionType())) {
+                transaction.setUpiId(request.getUpiId());
                 if (transaction.getUpiId() == null) {
                     logger.error("UPI ID is required for UPI transaction");
                     return ResponseEntity.badRequest().body("UPI ID is required for UPI transaction");
                 }
-                fromAccount.setBalance(fromAccount.getBalance() - transaction.getAmount());
+                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
                 accountRepo.saveAndFlush(fromAccount);
-                logger.info("UPI transaction completed: From {}, Amount: {}", fromAccount.getId(), transaction.getAmount());
+                logger.info("UPI transaction completed: From {}, Amount: {}", fromAccount.getId(), request.getAmount());
             } else {
-                logger.error("Unsupported transaction type: {}", transaction.getTransactionType());
+                logger.error("Unsupported transaction type: {}", request.getTransactionType());
                 return ResponseEntity.badRequest().body("Unsupported transaction type");
             }
 
-            transactionHistoryRepo.saveAndFlush(transaction);
-            logger.info("Transaction history saved: ID {}", transaction.getId());
+            transaction.setCreatedAt(LocalDateTime.now());
+            TransactionHistory savedTransaction = transactionHistoryRepo.saveAndFlush(transaction);
+            logger.info("Transaction history saved: ID {}", savedTransaction.getId());
         } catch (Exception e) {
             logger.error("Transaction failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Transaction failed: " + e.getMessage());
@@ -153,5 +179,18 @@ public class FeedbackAndTransactionController {
             logger.error("Error fetching transactions for userId {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    @GetMapping("/account/{accountNumber}/id")
+    public ResponseEntity<Long> getAccountIdByAccountNumber(@PathVariable String accountNumber) {
+        logger.info("Fetching account ID for accountNumber: {}", accountNumber);
+        BankAccount account = accountRepo.findByAccountNumber(accountNumber)
+                .orElse(null);
+        if (account == null) {
+            logger.error("No account found for accountNumber: {}", accountNumber);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+        logger.info("Found account ID: {} for accountNumber: {}", account.getId(), accountNumber);
+        return ResponseEntity.ok(account.getId());
     }
 }

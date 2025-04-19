@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -99,7 +100,8 @@ public class BankAccountController {
 
     @GetMapping("/account/{accountNumber}")
     public ResponseEntity<Object> getAccountByNumber(@PathVariable String accountNumber, @RequestHeader("User-Id") Long loggedInUserId) {
-        BankAccount account = accountRepo.findByAccountNumber(accountNumber);
+        Optional<BankAccount> accountOptional = accountRepo.findByAccountNumber(accountNumber);
+        BankAccount account = accountOptional.orElse(null);
         if (account == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
         }

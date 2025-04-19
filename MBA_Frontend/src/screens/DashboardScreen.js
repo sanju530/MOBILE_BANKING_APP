@@ -7,13 +7,17 @@ import {
   Image,
   DrawerLayoutAndroid,
   FlatList,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 const DashboardScreen = () => {
   const [username, setUsername] = useState(null);
-  const [token, setToken] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const drawerRef = useRef(null);
   const navigation = useNavigation();
@@ -21,9 +25,7 @@ const DashboardScreen = () => {
   useEffect(() => {
     const fetchData = async () => {
       const storedUsername = await AsyncStorage.getItem('username');
-      const storedToken = await AsyncStorage.getItem('token');
       setUsername(storedUsername);
-      setToken(storedToken);
     };
     fetchData();
   }, []);
@@ -54,207 +56,163 @@ const DashboardScreen = () => {
     { id: '6', title: 'Logout', icon: require('../../assets/logout_icon.jpeg'), onPress: handleLogout },
   ], [navigation, closeDrawerSafely, handleLogout]);
 
+  const quickActions = useMemo(() => [
+    { id: '1', title: 'Transfer', icon: '💸', color: '#4a69bd', onPress: () => navigation.navigate('FundTransfer') },
+    { id: '2', title: 'QR Pay', icon: '📱', color: '#6a89cc', onPress: () => navigation.navigate('ScanQR') },
+    { id: '3', title: 'Accounts', icon: '💼', color: '#1e3799', onPress: () => navigation.navigate('Accounts') },
+    { id: '4', title: 'Loans', icon: '🏦', color: '#0c2461', onPress: () => navigation.navigate('BankAccountList') },
+  ], [navigation]);
+
+  const additionalFeatures = useMemo(() => [
+    { 
+      id: '1', 
+      title: 'Transaction History', 
+      emoji: '📊', 
+      subtitle: 'View your recent transactions',
+      gradient: ['#00b894', '#00cec9'],
+      onPress: () => navigation.navigate('TransactionHistory')
+    },
+    { 
+      id: '2', 
+      title: 'Bill Payment', 
+      emoji: '📃', 
+      subtitle: 'Pay utilities and other bills',
+      gradient: ['#e17055', '#d63031'],
+      onPress: () => navigation.navigate('BillPayment')
+    },
+  ], [navigation]);
+
   const renderDrawerContent = () => (
     <View style={styles.drawerContainer}>
-      <View style={styles.drawerHeader}>
-        <Image
-          source={require('../../assets/profile_icon.jpg')}
-          style={styles.profileIcon}
-        />
-        <Text style={styles.drawerUsername}>{username || 'User'}</Text>
-      </View>
+      <LinearGradient colors={['#1e3799', '#4a69bd']} style={styles.drawerHeader}>
+        <Image source={require('../../assets/profile_icon.jpg')} style={styles.profileIcon} />
+        <View>
+          <Text style={styles.drawerUsername}>{username || 'User'}</Text>
+          <Text style={styles.drawerSubtitle}>Welcome back!</Text>
+        </View>
+      </LinearGradient>
       <FlatList
         data={menuItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={item.onPress}
-          >
-            <Image source={item.icon} style={styles.menuIcon} />
+          <TouchableOpacity style={styles.menuItem} onPress={item.onPress}>
+            <View style={styles.menuIconContainer}>
+              <Image source={item.icon} style={styles.menuIcon} />
+            </View>
             <Text style={styles.menuText}>{item.title}</Text>
           </TouchableOpacity>
         )}
       />
+      <View style={styles.drawerFooter}>
+        <Text style={styles.versionText}>App Version 1.0.0</Text>
+      </View>
     </View>
   );
 
   return (
     <DrawerLayoutAndroid
       ref={drawerRef}
-      drawerWidth={250}
+      drawerWidth={width * 0.75}
       drawerPosition="left"
       renderNavigationView={renderDrawerContent}
       onDrawerSlide={(e) => setIsDrawerOpen(e.nativeEvent.offset > 0)}
       onDrawerClose={() => setIsDrawerOpen(false)}
       onDrawerOpen={() => setIsDrawerOpen(true)}
     >
+      <StatusBar backgroundColor="#1e3799" barStyle="light-content" />
       <View style={styles.container}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
-            <Text style={styles.menuIconText}>☰</Text>
-          </TouchableOpacity>
-          <Image
-            source={require('../../assets/logo.jpeg')}
-            style={styles.logo}
-          />
-          <View style={{ width: 30 }} />
+        <LinearGradient colors={['#1e3799', '#4a69bd']} style={styles.headerGradient}>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
+              <Text style={styles.menuIconText}>☰</Text>
+            </TouchableOpacity>
+            <Image source={require('../../assets/logo.jpeg')} style={styles.logo} />
+            <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+              <Text style={styles.notificationIcon}>🔔</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.welcomeSection}>
+            <Text style={styles.greetingText}>Hello,</Text>
+            <Text style={styles.headerText}>{username || 'User'} 👋</Text>
+          </View>
+        </LinearGradient>
+
+        <View style={styles.contentContainer}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsContainer}>
+            {quickActions.map((action) => (
+              <TouchableOpacity 
+                key={action.id} 
+                style={[styles.quickActionButton, { backgroundColor: action.color }]} 
+                onPress={action.onPress}
+              >
+                <Text style={styles.quickActionIcon}>{action.icon}</Text>
+                <Text style={styles.quickActionText}>{action.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.sectionTitle}>Features</Text>
+          <View style={styles.featuresContainer}>
+            {additionalFeatures.map((feature) => (
+              <TouchableOpacity 
+                key={feature.id} 
+                style={styles.featureCard} 
+                onPress={feature.onPress}
+              >
+                <LinearGradient colors={feature.gradient} style={styles.featureGradient}>
+                  <View style={styles.featureContent}>
+                    <Text style={styles.featureEmoji}>{feature.emoji}</Text>
+                    <View style={styles.featureTextContainer}>
+                      <Text style={styles.featureText}>{feature.title}</Text>
+                      <Text style={styles.featureSubtext}>{feature.subtitle}</Text>
+                    </View>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-        <Text style={styles.headerText}>Hello, {username ? `\n${username}` : 'User'}</Text>
-        <Text style={styles.welcomeText}>
-          Welcome to {username ? username : 'User'}'s Dashboard
-        </Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Accounts')}>
-            <Text style={styles.buttonText}>Accounts</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FundTransfer')}>
-            <Text style={styles.buttonText}>Fund Transfer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BankAccountList')}>
-            <Text style={styles.buttonText}>Apply Loan</Text>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity
-          style={styles.scanQRButton}
-          onPress={() => navigation.navigate('ScanQR')}
-        >
-          <Image source={require('../../assets/qr_icon.jpeg')} style={styles.qrIcon} />
-          <Text style={styles.scanQRText}>SCAN QR</Text>
-        </TouchableOpacity>
       </View>
     </DrawerLayoutAndroid>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#f0f4f8',
-    justifyContent: 'space-between',
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#2c3e50',
-    textAlign: 'center',
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    padding: 15,
-    backgroundColor: '#fff',
-    elevation: 6,
-    borderBottomWidth: 2,
-    borderBottomColor: '#ddd',
-    borderRadius: 10,
-  },
-  menuIconText: {
-    fontSize: 32,
-    color: '#2c3e50',
-  },
-  logo: {
-    width: 60,
-    height: 60,
-    resizeMode: 'contain',
-  },
-  headerText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#2980b9',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  buttonContainer: {
-    width: '90%',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  button: {
-    backgroundColor: '#3498db',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    marginVertical: 12,
-    width: '100%',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  scanQRButton: {
-    flexDirection: 'row',
-    backgroundColor: '#1abc9c',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  qrIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 12,
-  },
-  scanQRText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  drawerContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  drawerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 25,
-    borderBottomWidth: 2,
-    borderBottomColor: '#ecf0f1',
-    backgroundColor: '#f0f4f8',
-  },
-  profileIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 15,
-  },
-  drawerUsername: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
-  },
-  menuIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 12,
-  },
-  menuText: {
-    fontSize: 18,
-    color: '#2c3e50',
-  },
+  container: { flex: 1, backgroundColor: '#f5f6fa' },
+  headerGradient: { paddingTop: 20, paddingBottom: 50, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15 },
+  menuIconText: { fontSize: 28, color: '#fff' },
+  logo: { width: 40, height: 40, resizeMode: 'contain', borderRadius: 30, backgroundColor: '#fff' },
+  notificationIcon: { fontSize: 24, color: '#fff' },
+  welcomeSection: { paddingHorizontal: 20, paddingTop: 10 },
+  greetingText: { fontSize: 18, color: '#dcdde1', fontWeight: '500' },
+  headerText: { fontSize: 28, fontWeight: 'bold', color: '#fff', marginTop: 10 },
+  contentContainer: { flex: 1, paddingHorizontal: 20, marginTop: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginTop: 30, marginBottom: 15 },
+  quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  quickActionButton: { width: width / 4 - 25, height: width / 4 - 25, borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 3 },
+  quickActionIcon: { fontSize: 24, marginBottom: 5, color: '#fff' },
+  quickActionText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  featuresContainer: { marginBottom: 25 },
+  featureCard: { borderRadius: 15, marginBottom: 15, elevation: 4, overflow: 'hidden' },
+  featureGradient: { padding: 15 },
+  featureContent: { flexDirection: 'row', alignItems: 'center' },
+  featureEmoji: { fontSize: 28, marginRight: 15 },
+  featureTextContainer: { flex: 1 },
+  featureText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  featureSubtext: { fontSize: 12, color: '#fff', marginTop: 4 },
+  drawerContainer: { flex: 1, backgroundColor: '#fff' },
+  drawerHeader: { flexDirection: 'row', alignItems: 'center', padding: 20 },
+  profileIcon: { width: 50, height: 50, borderRadius: 25, marginRight: 15 },
+  drawerUsername: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  drawerSubtitle: { fontSize: 14, color: '#ecf0f1' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 },
+  menuIconContainer: { width: 30, height: 30, marginRight: 15 },
+  menuIcon: { width: '100%', height: '100%', resizeMode: 'contain' },
+  menuText: { fontSize: 16, color: '#2d3436' },
+  drawerFooter: { marginTop: 'auto', padding: 20 },
+  versionText: { fontSize: 12, color: '#636e72', textAlign: 'center' },
 });
 
 export default DashboardScreen;

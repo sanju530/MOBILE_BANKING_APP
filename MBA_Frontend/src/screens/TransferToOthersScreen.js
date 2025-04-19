@@ -1,4 +1,3 @@
-// src/screens/TransferToOthersScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,16 +30,30 @@ const TransferToOthersScreen = () => {
       return;
     }
     try {
+      const userId = await AsyncStorage.getItem('userId');
+      const toAccountResponse = await api.get(`/api/account/${toAccountNumber}/id`);
+      const toAccountId = toAccountResponse.data;
+
       const payload = {
+        userId: parseInt(userId),
         fromAccountNumber: fromAccount.accountNumber,
-        toAccountNumber,
+        toAccountNumber: toAccountNumber, // Send toAccountNumber for mapping
         amount: parseFloat(amount),
+        transactionType: 'TRANSFER_TO_OTHERS',
       };
-      const response = await api.post('/transaction/pay', payload);
+      console.log('Sending transfer payload:', payload); // Debug log
+      const response = await api.post('/api/transaction', payload); // Use /api/transaction
+      console.log('Transfer response:', response.data); // Debug log
       Alert.alert('Success', response.data);
-      navigation.goBack();
+      navigation.navigate('TransactionHistory'); // Navigate to history to refresh
     } catch (error) {
-      Alert.alert('Error', error.response?.data || 'Transfer failed');
+      console.error('Transfer error details:', {
+        message: error.message,
+        response: error.response ? error.response.data : 'No response data',
+        status: error.response ? error.response.status : 'No status',
+        url: error.response ? error.response.config.url : 'No URL',
+      }); // Detailed debug log
+      Alert.alert('Error', error.response?.data?.message || 'Transfer failed');
     }
   };
 
@@ -49,7 +62,7 @@ const TransferToOthersScreen = () => {
       style={[styles.accountItem, fromAccount?.id === item.id && styles.selectedItem]}
       onPress={() => setFromAccount(item)}
     >
-      <Text>{item.bankName} - {item.accountNumber} </Text>
+      <Text>{item.bankName} - {item.accountNumber}</Text>
     </TouchableOpacity>
   );
 

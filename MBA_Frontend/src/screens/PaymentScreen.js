@@ -41,23 +41,30 @@ const PaymentScreen = () => {
     }
 
     try {
+      const userId = await AsyncStorage.getItem('userId');
       const payload = {
-        fromAccountNumber,
-        toAccountNumber,
+        userId: parseInt(userId),
+        fromAccountId: (await api.get(`/account/accountNumber/${fromAccountNumber}`)).data.id, // Fetch account ID
+        toAccountId: (await api.get(`/account/accountNumber/${toAccountNumber}`)).data.id, // Fetch account ID
         amount: parseFloat(amount),
+        transactionType: 'TRANSFER_TO_OTHERS', // Adjust based on context
+        status: 'COMPLETED',
       };
-      const response = await api.post('/transaction/pay', payload);
+      console.log('Sending payment payload:', payload); // Debug log
+      const response = await api.post('/api/transaction', payload); // Changed to /api/transaction
+      console.log('Payment response:', response.data); // Debug log
       Alert.alert('Success', 'Payment successful! Balance updated.');
-      navigation.navigate('Dashboard');
+      navigation.navigate('TransactionHistory'); // Navigate to history
     } catch (error) {
-      Alert.alert('Error', error.response?.data || 'Payment failed.');
+      console.error('Payment error:', error.response ? error.response.data : error.message); // Debug log
+      Alert.alert('Error', error.response?.data?.message || 'Payment failed.');
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Make a Payment</Text>
-      <Text style={styles.label}>Account Number: {displayAccount}</Text> {/* Removed recipientName */}
+      <Text style={styles.label}>To Account: {displayAccount}</Text>
       <Text style={styles.label}>From Account: {fromAccountNumber || 'Loading...'}</Text>
       <TextInput
         style={styles.input}

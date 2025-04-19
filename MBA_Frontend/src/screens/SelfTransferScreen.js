@@ -1,4 +1,3 @@
-// src/screens/SelfTransferScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +16,7 @@ const SelfTransferScreen = () => {
       try {
         const userId = await AsyncStorage.getItem('userId');
         const response = await api.get(`/account/user/${userId}`);
+        console.log('Fetched accounts:', response.data); // Debug log
         setAccounts(response.data);
       } catch (error) {
         Alert.alert('Error', 'Failed to load accounts');
@@ -35,16 +35,23 @@ const SelfTransferScreen = () => {
       return;
     }
     try {
+      const userId = await AsyncStorage.getItem('userId');
       const payload = {
-        fromAccountNumber: fromAccount.accountNumber,
-        toAccountNumber: toAccount.accountNumber,
+        userId: parseInt(userId),
+        fromAccountNumber: fromAccount.accountNumber, // Use accountNumber
+        toAccountNumber: toAccount.accountNumber,     // Use accountNumber
         amount: parseFloat(amount),
+        transactionType: 'SELF_TRANSFER',
+        status: 'COMPLETED',
       };
-      const response = await api.post('/transaction/pay', payload);
+      console.log('Sending self-transfer payload:', payload); // Debug log
+      const response = await api.post('/api/transaction', payload);
+      console.log('Self-transfer response:', response.data); // Debug log
       Alert.alert('Success', response.data);
-      navigation.goBack();
+      navigation.navigate('TransactionHistory');
     } catch (error) {
-      Alert.alert('Error', error.response?.data || 'Transfer failed');
+      console.error('Self-transfer error:', error.response ? error.response.data : error.message);
+      Alert.alert('Error', error.response?.data?.message || 'Transfer failed');
     }
   };
 
@@ -53,7 +60,7 @@ const SelfTransferScreen = () => {
       style={[styles.accountItem, fromAccount?.id === item.id && styles.selectedItem]}
       onPress={() => setFromAccount(item)}
     >
-      <Text>{item.bankName} - {item.accountNumber} </Text>
+      <Text>{item.bankName} - {item.accountNumber}</Text>
     </TouchableOpacity>
   );
 
@@ -62,7 +69,7 @@ const SelfTransferScreen = () => {
       style={[styles.accountItem, toAccount?.id === item.id && styles.selectedItem]}
       onPress={() => setToAccount(item)}
     >
-      <Text>{item.bankName} - {item.accountNumber} </Text>
+      <Text>{item.bankName} - {item.accountNumber}</Text>
     </TouchableOpacity>
   );
 

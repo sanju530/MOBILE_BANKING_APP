@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/transaction")
 public class TransactionController {
@@ -16,8 +18,11 @@ public class TransactionController {
 
     @PostMapping("/pay")
     public ResponseEntity<?> pay(@RequestBody TransactionRequest req) {
-        BankAccount from = accountRepo.findByAccountNumber(req.getFromAccountNumber());
-        BankAccount to = accountRepo.findByAccountNumber(req.getToAccountNumber());
+        Optional<BankAccount> fromOptional = accountRepo.findByAccountNumber(req.getFromAccountNumber());
+        BankAccount from = fromOptional.orElse(null);
+
+        Optional<BankAccount> toOptional = accountRepo.findByAccountNumber(req.getToAccountNumber());
+        BankAccount to = toOptional.orElse(null);
 
         if (from == null || to == null) {
             return ResponseEntity.badRequest().body("Invalid account number");
@@ -38,7 +43,8 @@ public class TransactionController {
 
     @GetMapping("/receive/{accountId}")
     public String generateQRCode(@PathVariable Long accountId) {
-        BankAccount account = accountRepo.findById(accountId).orElse(null);
+        Optional<BankAccount> accountOptional = accountRepo.findById(accountId);
+        BankAccount account = accountOptional.orElse(null);
         if (account == null) {
             return "Invalid account ID";
         }
