@@ -8,13 +8,14 @@ import {
   Alert,
   FlatList,
   Animated,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Animatable from 'react-native-animatable';
+import TransactionPayloadFactory from '../services/TransactionPayloadFactory';
 
 const { width } = Dimensions.get('window');
 
@@ -23,7 +24,9 @@ const SelfTransferScreen = () => {
   const [fromAccount, setFromAccount] = useState(null);
   const [toAccount, setToAccount] = useState(null);
   const [amount, setAmount] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isUpi, setIsUpi] = useState(false); // Toggle for UPI mode
   const navigation = useNavigation();
   const scrollY = new Animated.Value(0);
 
@@ -45,53 +48,59 @@ const SelfTransferScreen = () => {
   }, []);
 
   const handleTransfer = async () => {
-    if (!fromAccount || !toAccount || !amount || parseFloat(amount) <= 0) {
-      Alert.alert('Error', 'Please select accounts and enter a valid amount');
-      return;
-    }
-    if (fromAccount.id === toAccount.id) {
-      Alert.alert('Error', 'From and To accounts cannot be the same');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const userId = await AsyncStorage.getItem('userId');
-      const payload = {
-        userId: parseInt(userId),
-        fromAccountNumber: fromAccount.accountNumber,
-        toAccountNumber: toAccount.accountNumber,
-        amount: parseFloat(amount),
-        transactionType: 'SELF_TRANSFER',
-        status: 'COMPLETED',
-      };
-      console.log('Sending self-transfer payload:', payload);
-      const response = await api.post('/api/transaction', payload);
-      console.log('Self-transfer response:', response.data);
-      
-      // Success animation and feedback
-      Alert.alert('Success', 'Transfer completed successfully!');
-      navigation.navigate('TransactionHistory');
-    } catch (error) {
-      console.error('Self-transfer error:', error.response ? error.response.data : error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Transfer failed');
-    } finally {
-      setLoading(false);
+    if (isUpi) {
+      if (!fromAccount || !amount || parseFloat(amount) <= 0 || !upiId) {
+        Alert.alert('Error', 'Please select an account, enter a valid amount, and provide a UPI ID');
+        return;
+      }
+      setLoading(true);
+      try {
+        const payload = await TransactionPayloadFactory.createUpiPayload(fromAccount, amount, upiId);
+        console.log('Sending UPI payload:', payload);
+        const response = await api.post('/api/transaction', payload);
+        console.log('UPI response:', response.data);
+        Alert.alert('Success', 'UPI transaction completed successfully!');
+        navigation.navigate('TransactionHistory');
+      } catch (error) {
+        console.error('UPI error:', error.response ? error.response.data : error.message);
+        Alert.alert('Error', error.response?.data?.message || 'UPI transaction failed');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      if (!fromAccount || !toAccount || !amount || parseFloat(amount) <= 0) {
+        Alert.alert('Error', 'Please select accounts and enter a valid amount');
+        return;
+      }
+      if (fromAccount.id === toAccount.id) {
+        Alert.alert('Error', 'From and To accounts cannot be the same');
+        return;
+      }
+      setLoading(true);
+      try {
+        const payload = await TransactionPayloadFactory.createSelfTransferPayload(fromAccount, toAccount, amount);
+        console.log('Sending self-transfer payload:', payload);
+        const response = await api.post('/api/transaction', payload);
+        console.log('Self-transfer response:', response.data);
+        Alert.alert('Success', 'Transfer completed successfully!');
+        navigation.navigate('TransactionHistory');
+      } catch (error) {
+        console.error('Self-transfer error:', error.response ? error.response.data : error.message);
+        Alert.alert('Error', error.response?.data?.message || 'Transfer failed');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const renderFromAccount = ({ item, index }) => (
-    <Animatable.View 
-      animation="fadeInUp" 
-      delay={index * 100}
-      duration={500}
-    >
+    <Animatable.View animation="fadeInUp" delay={index * 100} duration={500}>
       <TouchableOpacity
         style={[styles.accountCard, fromAccount?.id === item.id && styles.selectedCard]}
         onPress={() => setFromAccount(item)}
       >
         <View style={styles.bankIconContainer}>
-          <Icon name="bank" size={24} color={fromAccount?.id === item.id ? "#0A3D62" : "#6B7280"} />
+          <Icon name="bank" size={24} color={fromAccount?.id === item.id ? '#0A3D62' : '#6B7280'} />
         </View>
         <View style={styles.accountInfo}>
           <Text style={styles.bankName}>{item.bankName}</Text>
@@ -107,17 +116,13 @@ const SelfTransferScreen = () => {
   );
 
   const renderToAccount = ({ item, index }) => (
-    <Animatable.View 
-      animation="fadeInUp" 
-      delay={index * 100}
-      duration={500}
-    >
+    <Animatable.View animation="fadeInUp" delay={index * 100} duration={500}>
       <TouchableOpacity
         style={[styles.accountCard, toAccount?.id === item.id && styles.selectedCard]}
         onPress={() => setToAccount(item)}
       >
         <View style={styles.bankIconContainer}>
-          <Icon name="bank-transfer" size={24} color={toAccount?.id === item.id ? "#0A3D62" : "#6B7280"} />
+          <Icon name="bank-transfer" size={24} color={toAccount?.id === item.id ? '#0A3D62' : '#6B7280'} />
         </View>
         <View style={styles.accountInfo}>
           <Text style={styles.bankName}>{item.bankName}</Text>
@@ -135,10 +140,10 @@ const SelfTransferScreen = () => {
   return (
     <View style={styles.container}>
       <Animatable.View animation="fadeIn" duration={800} style={styles.header}>
-        <Text style={styles.headerTitle}>Self Transfer</Text>
-        <Text style={styles.headerSubtitle}>Transfer between your accounts</Text>
+        <Text style={styles.headerTitle}>Transfer</Text>
+        <Text style={styles.headerSubtitle}>Select transaction type</Text>
       </Animatable.View>
-      
+
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -148,6 +153,23 @@ const SelfTransferScreen = () => {
         )}
       >
         <Animatable.View animation="fadeInUp" delay={100} duration={800}>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[styles.toggleButton, !isUpi && styles.activeToggle]}
+              onPress={() => setIsUpi(false)}
+            >
+              <Text style={!isUpi ? styles.activeText : styles.inactiveText}>Self Transfer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleButton, isUpi && styles.activeToggle]}
+              onPress={() => setIsUpi(true)}
+            >
+              <Text style={isUpi ? styles.activeText : styles.inactiveText}>UPI</Text>
+            </TouchableOpacity>
+          </View>
+        </Animatable.View>
+
+        <Animatable.View animation="fadeInUp" delay={200} duration={800}>
           <Text style={styles.sectionTitle}>From Account</Text>
           <FlatList
             data={accounts}
@@ -158,8 +180,8 @@ const SelfTransferScreen = () => {
           />
         </Animatable.View>
 
-        {fromAccount && (
-          <Animatable.View animation="fadeInUp" delay={200} duration={800}>
+        {!isUpi && fromAccount && (
+          <Animatable.View animation="fadeInUp" delay={300} duration={800}>
             <Text style={styles.sectionTitle}>To Account</Text>
             <FlatList
               data={accounts.filter((acc) => acc.id !== fromAccount.id)}
@@ -171,7 +193,7 @@ const SelfTransferScreen = () => {
           </Animatable.View>
         )}
 
-        <Animatable.View animation="fadeInUp" delay={300} duration={800} style={styles.amountContainer}>
+        <Animatable.View animation="fadeInUp" delay={400} duration={800} style={styles.amountContainer}>
           <Text style={styles.sectionTitle}>Amount</Text>
           <View style={styles.inputWrapper}>
             <Text style={styles.currencySymbol}>₹</Text>
@@ -185,11 +207,26 @@ const SelfTransferScreen = () => {
             />
           </View>
         </Animatable.View>
+
+        {isUpi && (
+          <Animatable.View animation="fadeInUp" delay={500} duration={800} style={styles.amountContainer}>
+            <Text style={styles.sectionTitle}>UPI ID</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.amountInput}
+                placeholder="e.g., user@upi"
+                value={upiId}
+                onChangeText={setUpiId}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+          </Animatable.View>
+        )}
       </Animated.ScrollView>
 
-      <Animatable.View animation="fadeInUp" delay={400} duration={800} style={styles.floatingButtonContainer}>
-        <TouchableOpacity 
-          style={styles.floatingButton} 
+      <Animatable.View animation="fadeInUp" delay={600} duration={800} style={styles.floatingButtonContainer}>
+        <TouchableOpacity
+          style={styles.floatingButton}
           onPress={handleTransfer}
           disabled={loading}
         >
@@ -347,7 +384,32 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  }
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginHorizontal: 5,
+  },
+  activeToggle: {
+    backgroundColor: '#0A3D62',
+    borderColor: '#0A3D62',
+  },
+  activeText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  inactiveText: {
+    color: '#6B7280',
+  },
 });
 
 export default SelfTransferScreen;

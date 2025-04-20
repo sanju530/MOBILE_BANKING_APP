@@ -18,6 +18,8 @@ import api from '../services/api';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Animatable from 'react-native-animatable';
+import TransactionPayloadFactory from '../services/TransactionPayloadFactory';
+
 
 const TransferToOthersScreen = () => {
   const [accounts, setAccounts] = useState([]);
@@ -79,18 +81,10 @@ const TransferToOthersScreen = () => {
     
     setLoading(true);
     try {
-      const userId = await AsyncStorage.getItem('userId');
       const toAccountResponse = await api.get(`/api/account/${toAccountNumber}/id`);
       const toAccountId = toAccountResponse.data;
-
-      const payload = {
-        userId: parseInt(userId),
-        fromAccountNumber: fromAccount.accountNumber,
-        toAccountNumber: toAccountNumber,
-        amount: parseFloat(amount),
-        transactionType: 'TRANSFER_TO_OTHERS',
-        status: 'COMPLETED',
-      };
+  
+      const payload = await TransactionPayloadFactory.createTransferToOthersPayload(fromAccount, toAccountNumber, amount);
       console.log('Sending transfer payload:', payload);
       const response = await api.post('/api/transaction', payload);
       console.log('Transfer response:', response.data);

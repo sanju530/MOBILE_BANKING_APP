@@ -14,6 +14,9 @@ import com.mobilebanking.bankapp.repository.RatingRepository;
 import com.mobilebanking.bankapp.repository.ReceiveRequestRepository;
 import com.mobilebanking.bankapp.repository.TransactionHistoryRepository;
 import com.mobilebanking.bankapp.dto.TransactionHistoryDTO;
+import com.mobilebanking.bankapp.factory.TransactionFactory;
+import com.mobilebanking.bankapp.strategy.TransactionStrategy; // Ensure this import is present
+import com.mobilebanking.bankapp.strategy.TransactionStrategyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,23 +35,31 @@ public class FeedbackAndTransactionController {
 
     private static final Logger logger = LoggerFactory.getLogger(FeedbackAndTransactionController.class);
 
-    @Autowired
-    private FeedbackRepository feedbackRepo;
+    private final FeedbackRepository feedbackRepo;
+    private final TransactionHistoryRepository transactionHistoryRepo;
+    private final BankAccountRepository accountRepo;
+    private final BillingRepository billingRepo;
+    private final RatingRepository ratingRepo;
+    private final ReceiveRequestRepository receiveRequestRepo;
+    private final TransactionStrategyFactory strategyFactory;
 
     @Autowired
-    private TransactionHistoryRepository transactionHistoryRepo;
-
-    @Autowired
-    private BankAccountRepository accountRepo;
-
-    @Autowired
-    private BillingRepository billingRepo;
-
-    @Autowired
-    private RatingRepository ratingRepo;
-
-    @Autowired
-    private ReceiveRequestRepository receiveRequestRepo;
+    public FeedbackAndTransactionController(
+            FeedbackRepository feedbackRepo,
+            TransactionHistoryRepository transactionHistoryRepo,
+            BankAccountRepository accountRepo,
+            BillingRepository billingRepo,
+            RatingRepository ratingRepo,
+            ReceiveRequestRepository receiveRequestRepo,
+            TransactionStrategyFactory strategyFactory) {
+        this.feedbackRepo = feedbackRepo;
+        this.transactionHistoryRepo = transactionHistoryRepo;
+        this.accountRepo = accountRepo;
+        this.billingRepo = billingRepo;
+        this.ratingRepo = ratingRepo;
+        this.receiveRequestRepo = receiveRequestRepo;
+        this.strategyFactory = strategyFactory;
+    }
 
     @PostMapping("/feedback")
     public ResponseEntity<String> addFeedback(@RequestBody Feedback feedback) {
@@ -69,22 +80,8 @@ public class FeedbackAndTransactionController {
             return ResponseEntity.badRequest().body("User ID and valid amount are required");
         }
 
-        TransactionHistory transaction = new TransactionHistory();
-        transaction.setUserId(request.getUserId());
-        transaction.setAmount(request.getAmount());
-        transaction.setTransactionType(request.getTransactionType());
-        transaction.setStatus("COMPLETED");
-
-        BankAccount fromAccount = null;
-        BankAccount toAccount = null;
-
-        if (request.getFromAccountNumber() != null) {
-            fromAccount = accountRepo.findByAccountNumber(request.getFromAccountNumber())
-                    .orElse(null);
-            if (fromAccount != null) {
-                transaction.setFromAccountId(fromAccount.getId());
-            }
-        }
+        BankAccount fromAccount = accountRepo.findByAccountNumber(request.getFromAccountNumber())
+                .orElse(null);
         if (fromAccount == null) {
             logger.error("Invalid source account number: {}", request.getFromAccountNumber());
             return ResponseEntity.badRequest().body("Invalid source account number");
@@ -94,102 +91,31 @@ public class FeedbackAndTransactionController {
             return ResponseEntity.badRequest().body("Insufficient balance");
         }
 
+        BankAccount toAccount = null;
         if (request.getToAccountNumber() != null) {
             toAccount = accountRepo.findByAccountNumber(request.getToAccountNumber())
                     .orElse(null);
             if (toAccount != null) {
-                transaction.setToAccountId(toAccount.getId());
+                // toAccountId will be set by the factory
             }
         }
 
+        TransactionHistory transaction = TransactionFactory.createTransaction(request, fromAccount, toAccount);
         try {
-            if ("SELF_TRANSFER".equals(request.getTransactionType())) {
-                if (transaction.getToAccountId() == null) {
-                    logger.error("To account ID is required for self-transfer");
-                    return ResponseEntity.badRequest().body("To account ID is required for self-transfer");
-                }
-                toAccount = accountRepo.findById(transaction.getToAccountId()).orElse(null);
-                if (toAccount == null) {
-                    logger.error("Invalid destination account ID: {}", transaction.getToAccountId());
-                    return ResponseEntity.badRequest().body("Invalid destination account ID");
-                }
-                if (!fromAccount.getUser().getId().equals(toAccount.getUser().getId()) || !fromAccount.getUser().getId().equals(transaction.getUserId())) {
-                    logger.error("Accounts do not belong to the same user for self-transfer");
-                    return ResponseEntity.badRequest().body("Both accounts must belong to the same user for self-transfer");
-                }
-                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
-                toAccount.setBalance(toAccount.getBalance() + request.getAmount());
-                accountRepo.saveAndFlush(fromAccount);
-                accountRepo.saveAndFlush(toAccount);
-                logger.info("Self-transfer completed: From {} to {}, Amount: {}", fromAccount.getId(), toAccount.getId(), request.getAmount());
-            } else if ("TRANSFER_TO_OTHERS".equals(request.getTransactionType())) {
-                if (transaction.getToAccountId() == null) {
-                    logger.error("To account ID is required for transfer to others");
-                    return ResponseEntity.badRequest().body("To account ID is required for transfer to others");
-                }
-                toAccount = accountRepo.findById(transaction.getToAccountId()).orElse(null);
-                if (toAccount == null) {
-                    logger.error("Invalid destination account ID: {}", transaction.getToAccountId());
-                    return ResponseEntity.badRequest().body("Invalid destination account ID");
-                }
-                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
-                toAccount.setBalance(toAccount.getBalance() + request.getAmount());
-                accountRepo.saveAndFlush(fromAccount);
-                accountRepo.saveAndFlush(toAccount);
-                logger.info("Transfer to others completed: From {} to {}, Amount: {}", fromAccount.getId(), toAccount.getId(), request.getAmount());
-            } else if ("UPI".equals(request.getTransactionType())) {
-                transaction.setUpiId(request.getUpiId());
-                if (transaction.getUpiId() == null) {
-                    logger.error("UPI ID is required for UPI transaction");
-                    return ResponseEntity.badRequest().body("UPI ID is required for UPI transaction");
-                }
-                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
-                accountRepo.saveAndFlush(fromAccount);
-                logger.info("UPI transaction completed: From {}, Amount: {}", fromAccount.getId(), request.getAmount());
-            } else if ("BILL_PAYMENT".equals(request.getTransactionType())) {
-                if (request.getBillingType() == null) {
-                    logger.error("Billing type is required for bill payment");
-                    return ResponseEntity.badRequest().body("Billing type is required");
-                }
-                fromAccount.setBalance(fromAccount.getBalance() - request.getAmount());
-                accountRepo.saveAndFlush(fromAccount);
-                logger.info("Bill payment completed: From {}, Amount: {}", fromAccount.getId(), request.getAmount());
-            } else {
-                logger.error("Unsupported transaction type: {}", request.getTransactionType());
-                return ResponseEntity.badRequest().body("Unsupported transaction type");
-            }
+            TransactionStrategy strategy = strategyFactory.getStrategy(request.getTransactionType());
+            strategy.processTransaction(transaction, fromAccount, toAccount, request);
 
-            transaction.setCreatedAt(LocalDateTime.now());
             TransactionHistory savedTransaction = transactionHistoryRepo.saveAndFlush(transaction);
             logger.info("Transaction history saved: ID {}", savedTransaction.getId());
 
-            if ("BILL_PAYMENT".equals(request.getTransactionType())) {
-                Billing billing = new Billing();
-                billing.setTransactionId(savedTransaction.getId());
-                billing.setBillingType(request.getBillingType());
-                billing.setAmount(request.getAmount());
-                if ("ELECTRICITY".equals(request.getBillingType())) {
-                    if (request.getCustomerId() == null) {
-                        logger.error("Customer ID is required for electricity bill");
-                        return ResponseEntity.badRequest().body("Customer ID is required for electricity bill");
-                    }
-                    billing.setCustomerId(request.getCustomerId());
-                } else if ("RENT".equals(request.getBillingType())) {
-                    if (request.getPropertyName() == null) {
-                        logger.error("Property name is required for rent payment");
-                        return ResponseEntity.badRequest().body("Property name is required for rent payment");
-                    }
-                    billing.setPropertyName(request.getPropertyName());
-                } else if ("WATER".equals(request.getBillingType())) {
-                    if (request.getRrNumber() == null) {
-                        logger.error("RR number is required for water bill");
-                        return ResponseEntity.badRequest().body("RR number is required for water bill");
-                    }
-                    billing.setRrNumber(request.getRrNumber());
-                }
+            Billing billing = TransactionFactory.createBilling(savedTransaction, request);
+            if (billing != null) {
                 billingRepo.save(billing);
                 logger.info("Billing record saved: ID {}", billing.getId());
             }
+        } catch (IllegalArgumentException e) {
+            logger.error("Transaction processing failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             logger.error("Transaction failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Transaction failed: " + e.getMessage());
@@ -234,14 +160,12 @@ public class FeedbackAndTransactionController {
         }
 
         try {
-            // Verify account exists
             BankAccount account = accountRepo.findByAccountNumber(request.getAccountNumber()).orElse(null);
             if (account == null || !account.getUser().getId().equals(request.getUserId())) {
                 logger.error("Invalid account number {} for user ID {}", request.getAccountNumber(), request.getUserId());
                 return ResponseEntity.badRequest().body(null);
             }
 
-            // Generate simple QR code (placeholder - replace with actual QR library)
             String qrCodeData = "RECEIVE:" + request.getAccountNumber() + ":" + request.getAmount();
             request.setQrCode(qrCodeData);
             request.setStatus("PENDING");
