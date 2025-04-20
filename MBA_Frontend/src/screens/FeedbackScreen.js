@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import api from '../services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // if you're using AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FeedbackScreen = () => {
   const [feedbackText, setFeedbackText] = useState('');
@@ -32,7 +40,7 @@ const FeedbackScreen = () => {
       await api.post('/api/feedback', {
         userId,
         username,
-        feedbackText
+        feedbackText,
       });
       alert('Feedback submitted successfully!');
       setFeedbackText('');
@@ -43,42 +51,81 @@ const FeedbackScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Feedback</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your feedback"
-        value={feedbackText}
-        onChangeText={setFeedbackText}
-        multiline
-      />
-      <Button title="Submit Feedback" onPress={handleSubmit} />
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <View style={styles.innerContainer}>
+        <Text style={styles.title}>We value your thoughts</Text>
+        <Text style={styles.subtitle}>✨Share your feedback ✨</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Type your feedback here..."
+          value={feedbackText}
+          onChangeText={setFeedbackText}
+          multiline
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Submit Feedback</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#0f172a',
     justifyContent: 'center',
   },
+  innerContainer: {
+    margin: 20,
+    padding: 20,
+    backgroundColor: '#fffff',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#0f172a',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#475569',
     textAlign: 'center',
     marginBottom: 20,
   },
   input: {
-    height: 100,
-    borderColor: '#d1d5db',
+    height: 120,
+    borderColor: '#cbd5e1',
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 15,
-    padding: 10,
+    borderRadius: 12,
+    padding: 15,
+    backgroundColor: '#f8fafc',
     textAlignVertical: 'top',
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

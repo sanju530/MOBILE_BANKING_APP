@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
 const RateUsScreen = () => {
-  const [rating, setRating] = useState(0);
+  const [selectedStar, setSelectedStar] = useState(null); // store selected star index
 
-  const handleRate = async (stars) => {
-    setRating(stars);
+  const handleRate = async (star) => {
+    setSelectedStar(star);
     try {
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
         Alert.alert('Error', 'User not logged in');
         return;
       }
-      const payload = { userId: parseInt(userId), rating: stars };
+      const payload = { userId: parseInt(userId), rating: star };
       const response = await api.post('/api/rating', payload);
       Alert.alert('Success', response.data);
     } catch (error) {
@@ -25,18 +31,33 @@ const RateUsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Rate Us</Text>
-      <View style={styles.ratingContainer}>
+      <Text style={styles.title}>🌟 Rate Us 🌟</Text>
+      <Text style={styles.subtitle}>How was your experience?</Text>
+
+      <View style={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <Button
+          <TouchableOpacity
             key={star}
-            title={star.toString()}
             onPress={() => handleRate(star)}
-            color={star <= rating ? '#ffd700' : '#ccc'}
-          />
+            style={styles.starButton}
+          >
+            <Text
+              style={[
+                styles.star,
+                selectedStar === star ? styles.activeStar : styles.inactiveStar,
+              ]}
+            >
+              ⭐
+            </Text>
+          </TouchableOpacity>
         ))}
       </View>
-      <Text style={styles.ratingText}>Current Rating: {rating} stars</Text>
+
+      <Text style={styles.ratingText}>
+        {selectedStar === null
+          ? 'Tap a star to rate us!'
+          : `You rated us ${selectedStar} star${selectedStar > 1 ? 's' : ''} ⭐`}
+      </Text>
     </View>
   );
 };
@@ -44,26 +65,46 @@ const RateUsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#0f172a', // dark blue for contrast
+    alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#f8fafc',
+    marginBottom: 10,
     textAlign: 'center',
-    marginBottom: 20,
   },
-  ratingContainer: {
+  subtitle: {
+    fontSize: 18,
+    color: '#cbd5e1',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  starsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 25,
+  },
+  starButton: {
+    marginHorizontal: 5,
+  },
+  star: {
+    fontSize: 40,
+  },
+  activeStar: {
+    color: '#facc15', // golden
+  },
+  inactiveStar: {
+    color: '#ffffff', // white default
   },
   ratingText: {
-    fontSize: 18,
-    color: '#34495e',
+    fontSize: 16,
+    color: '#f1f5f9',
     textAlign: 'center',
+    marginTop: 10,
   },
 });
 

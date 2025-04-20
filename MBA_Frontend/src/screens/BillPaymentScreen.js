@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'; // Ensure useEffect is imported
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Picker } from '@react-native-picker/picker'; // Install: npm install @react-native-picker/picker
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
-import { useNavigation } from '@react-navigation/native';
 
 const BillPaymentScreen = () => {
   const [selectedOption, setSelectedOption] = useState(null);
@@ -10,29 +11,31 @@ const BillPaymentScreen = () => {
   const [propertyName, setPropertyName] = useState('');
   const [rrNumber, setRrNumber] = useState('');
   const [amount, setAmount] = useState('');
-  const [fromAccountNumber, setFromAccountNumber] = useState('');
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState('');
   const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchDefaultAccount = async () => {
+    const fetchAccounts = async () => {
       try {
         const userId = await AsyncStorage.getItem('userId');
         if (userId) {
           const response = await api.get(`/account/user/${userId}`);
           if (response.data && response.data.length > 0) {
-            setFromAccountNumber(response.data[0].accountNumber); // Use first account as default
+            setAccounts(response.data);
+            setSelectedAccount(response.data[0].accountNumber); // Default to first account
           }
         }
       } catch (error) {
         console.error('Error fetching accounts:', error);
       }
     };
-    fetchDefaultAccount();
+    fetchAccounts();
   }, []);
 
   const handlePay = async () => {
-    if (!selectedOption || !amount || parseFloat(amount) <= 0 || !fromAccountNumber) {
-      Alert.alert('Error', 'Please select a bill type, enter a valid amount, and ensure an account is selected');
+    if (!selectedOption || !amount || parseFloat(amount) <= 0 || !selectedAccount) {
+      Alert.alert('Error', 'Please select a bill type, enter a valid amount, and choose an account');
       return;
     }
 
@@ -40,7 +43,7 @@ const BillPaymentScreen = () => {
       const userId = await AsyncStorage.getItem('userId');
       const payload = {
         userId: parseInt(userId),
-        fromAccountNumber,
+        fromAccountNumber: selectedAccount,
         toAccountNumber: null,
         amount: parseFloat(amount),
         transactionType: 'BILL_PAYMENT',
@@ -84,12 +87,24 @@ const BillPaymentScreen = () => {
 
       {selectedOption && (
         <View style={styles.paymentForm}>
-          <TextInput
-            style={styles.input}
-            placeholder="From Account Number"
-            value={fromAccountNumber}
-            onChangeText={setFromAccountNumber}
-          />
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Select Account</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={selectedAccount}
+                onValueChange={(itemValue) => setSelectedAccount(itemValue)}
+                style={styles.picker}
+              >
+                {accounts.map((account) => (
+                  <Picker.Item
+                    key={account.accountNumber}
+                    label={`${account.accountNumber} (${account.bankName})`}
+                    value={account.accountNumber}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
           {selectedOption === 'ELECTRICITY' && (
             <TextInput
               style={styles.input}
@@ -139,6 +154,10 @@ const styles = StyleSheet.create({
   input: { height: 40, borderColor: '#ccc', borderWidth: 1, marginBottom: 15, paddingHorizontal: 10, borderRadius: 5 },
   payButton: { backgroundColor: '#1e3799', padding: 15, borderRadius: 8, alignItems: 'center' },
   payButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  pickerContainer: { marginBottom: 15 },
+  label: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 5 },
+  pickerWrapper: { borderWidth: 1, borderColor: '#ccc', borderRadius: 5, backgroundColor: '#fff' },
+  picker: { height: 40, width: '100%' },
 });
 
 export default BillPaymentScreen;

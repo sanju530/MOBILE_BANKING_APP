@@ -1,25 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  FlatList,
+  Animated,
+  Dimensions
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as Animatable from 'react-native-animatable';
+
+const { width } = Dimensions.get('window');
 
 const SelfTransferScreen = () => {
   const [accounts, setAccounts] = useState([]);
   const [fromAccount, setFromAccount] = useState(null);
   const [toAccount, setToAccount] = useState(null);
   const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
+  const scrollY = new Animated.Value(0);
 
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
+        setLoading(true);
         const userId = await AsyncStorage.getItem('userId');
         const response = await api.get(`/account/user/${userId}`);
-        console.log('Fetched accounts:', response.data); // Debug log
+        console.log('Fetched accounts:', response.data);
         setAccounts(response.data);
       } catch (error) {
         Alert.alert('Error', 'Failed to load accounts');
+      } finally {
+        setLoading(false);
       }
     };
     fetchAccounts();
@@ -34,85 +53,301 @@ const SelfTransferScreen = () => {
       Alert.alert('Error', 'From and To accounts cannot be the same');
       return;
     }
+    
+    setLoading(true);
     try {
       const userId = await AsyncStorage.getItem('userId');
       const payload = {
         userId: parseInt(userId),
-        fromAccountNumber: fromAccount.accountNumber, // Use accountNumber
-        toAccountNumber: toAccount.accountNumber,     // Use accountNumber
+        fromAccountNumber: fromAccount.accountNumber,
+        toAccountNumber: toAccount.accountNumber,
         amount: parseFloat(amount),
         transactionType: 'SELF_TRANSFER',
         status: 'COMPLETED',
       };
-      console.log('Sending self-transfer payload:', payload); // Debug log
+      console.log('Sending self-transfer payload:', payload);
       const response = await api.post('/api/transaction', payload);
-      console.log('Self-transfer response:', response.data); // Debug log
-      Alert.alert('Success', response.data);
+      console.log('Self-transfer response:', response.data);
+      
+      // Success animation and feedback
+      Alert.alert('Success', 'Transfer completed successfully!');
       navigation.navigate('TransactionHistory');
     } catch (error) {
       console.error('Self-transfer error:', error.response ? error.response.data : error.message);
       Alert.alert('Error', error.response?.data?.message || 'Transfer failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderFromAccount = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.accountItem, fromAccount?.id === item.id && styles.selectedItem]}
-      onPress={() => setFromAccount(item)}
+  const renderFromAccount = ({ item, index }) => (
+    <Animatable.View 
+      animation="fadeInUp" 
+      delay={index * 100}
+      duration={500}
     >
-      <Text>{item.bankName} - {item.accountNumber}</Text>
-    </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.accountCard, fromAccount?.id === item.id && styles.selectedCard]}
+        onPress={() => setFromAccount(item)}
+      >
+        <View style={styles.bankIconContainer}>
+          <Icon name="bank" size={24} color={fromAccount?.id === item.id ? "#0A3D62" : "#6B7280"} />
+        </View>
+        <View style={styles.accountInfo}>
+          <Text style={styles.bankName}>{item.bankName}</Text>
+          <Text style={styles.accountNumber}>{item.accountNumber}</Text>
+        </View>
+        {fromAccount?.id === item.id && (
+          <View style={styles.checkIconContainer}>
+            <Icon name="check-circle" size={24} color="#0A3D62" />
+          </View>
+        )}
+      </TouchableOpacity>
+    </Animatable.View>
   );
 
-  const renderToAccount = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.accountItem, toAccount?.id === item.id && styles.selectedItem]}
-      onPress={() => setToAccount(item)}
+  const renderToAccount = ({ item, index }) => (
+    <Animatable.View 
+      animation="fadeInUp" 
+      delay={index * 100}
+      duration={500}
     >
-      <Text>{item.bankName} - {item.accountNumber}</Text>
-    </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.accountCard, toAccount?.id === item.id && styles.selectedCard]}
+        onPress={() => setToAccount(item)}
+      >
+        <View style={styles.bankIconContainer}>
+          <Icon name="bank-transfer" size={24} color={toAccount?.id === item.id ? "#0A3D62" : "#6B7280"} />
+        </View>
+        <View style={styles.accountInfo}>
+          <Text style={styles.bankName}>{item.bankName}</Text>
+          <Text style={styles.accountNumber}>{item.accountNumber}</Text>
+        </View>
+        {toAccount?.id === item.id && (
+          <View style={styles.checkIconContainer}>
+            <Icon name="check-circle" size={24} color="#0A3D62" />
+          </View>
+        )}
+      </TouchableOpacity>
+    </Animatable.View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Select From Account</Text>
-      <FlatList
-        data={accounts}
-        renderItem={renderFromAccount}
-        keyExtractor={(item) => item.id.toString()}
-      />
-      {fromAccount && (
-        <>
-          <Text style={styles.title}>Select To Account</Text>
+      <Animatable.View animation="fadeIn" duration={800} style={styles.header}>
+        <Text style={styles.headerTitle}>Self Transfer</Text>
+        <Text style={styles.headerSubtitle}>Transfer between your accounts</Text>
+      </Animatable.View>
+      
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+      >
+        <Animatable.View animation="fadeInUp" delay={100} duration={800}>
+          <Text style={styles.sectionTitle}>From Account</Text>
           <FlatList
-            data={accounts.filter((acc) => acc.id !== fromAccount.id)}
-            renderItem={renderToAccount}
+            data={accounts}
+            renderItem={renderFromAccount}
             keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.accountsList}
+            scrollEnabled={false}
           />
-        </>
-      )}
-      <TextInput
-        style={styles.input}
-        placeholder="Amount"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
-      <TouchableOpacity style={styles.button} onPress={handleTransfer}>
-        <Text style={styles.buttonText}>Transfer</Text>
-      </TouchableOpacity>
+        </Animatable.View>
+
+        {fromAccount && (
+          <Animatable.View animation="fadeInUp" delay={200} duration={800}>
+            <Text style={styles.sectionTitle}>To Account</Text>
+            <FlatList
+              data={accounts.filter((acc) => acc.id !== fromAccount.id)}
+              renderItem={renderToAccount}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.accountsList}
+              scrollEnabled={false}
+            />
+          </Animatable.View>
+        )}
+
+        <Animatable.View animation="fadeInUp" delay={300} duration={800} style={styles.amountContainer}>
+          <Text style={styles.sectionTitle}>Amount</Text>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.currencySymbol}>₹</Text>
+            <TextInput
+              style={styles.amountInput}
+              placeholder="0.00"
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="numeric"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+        </Animatable.View>
+      </Animated.ScrollView>
+
+      <Animatable.View animation="fadeInUp" delay={400} duration={800} style={styles.floatingButtonContainer}>
+        <TouchableOpacity 
+          style={styles.floatingButton} 
+          onPress={handleTransfer}
+          disabled={loading}
+        >
+          {loading ? (
+            <Text style={styles.buttonText}>Processing...</Text>
+          ) : (
+            <>
+              <Icon name="send" size={20} color="#FFFFFF" style={styles.sendIcon} />
+              <Text style={styles.buttonText}>Transfer Now</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </Animatable.View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#ecf0f1' },
-  title: { fontSize: 18, fontWeight: 'bold', marginVertical: 10 },
-  accountItem: { padding: 10, backgroundColor: '#fff', marginBottom: 5, borderRadius: 5 },
-  selectedItem: { backgroundColor: '#d3e0ea' },
-  input: { height: 40, borderColor: '#ccc', borderWidth: 1, marginBottom: 20, paddingHorizontal: 10 },
-  button: { backgroundColor: '#3498db', padding: 15, borderRadius: 8 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  container: {
+    flex: 1,
+    position: 'relative',
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F1F1',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 5,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  accountsList: {
+    marginBottom: 15,
+  },
+  accountCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  selectedCard: {
+    borderColor: '#0A3D62',
+    borderWidth: 2,
+    shadowColor: '#0A3D62',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  bankIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  bankName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  accountNumber: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  checkIconContainer: {
+    marginLeft: 10,
+  },
+  amountContainer: {
+    marginTop: 15,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 5,
+    marginTop: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  currencySymbol: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0A3D62',
+    paddingHorizontal: 10,
+  },
+  amountInput: {
+    flex: 1,
+    height: 50,
+    fontSize: 18,
+    color: '#111827',
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
+  floatingButton: {
+    backgroundColor: '#0A3D62',
+    borderRadius: 30,
+    height: 56,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#0A3D62',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  sendIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  }
 });
 
 export default SelfTransferScreen;
