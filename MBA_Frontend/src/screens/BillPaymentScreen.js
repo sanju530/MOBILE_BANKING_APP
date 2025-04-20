@@ -59,7 +59,7 @@ const BillPaymentScreen = () => {
       navigation.navigate('TransactionHistory');
     } catch (error) {
       console.error('Bill payment error:', error.response ? error.response.data : error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Payment failed');
+      Alert.alert('Alert', error.response?.data?.message || 'Insufficient balance');
     }
   };
 

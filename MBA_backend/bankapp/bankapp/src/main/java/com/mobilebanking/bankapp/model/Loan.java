@@ -3,6 +3,7 @@ package com.mobilebanking.bankapp.model;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "loan")
 public class Loan {
 
     @Id
@@ -21,18 +22,22 @@ public class Loan {
     private double interestRate;
     private int termInMonths;
 
-    private String terms;  // Field for loan terms (optional, can be set dynamically)
+    private String terms;  // Field for loan terms
+
+    @Column(name = "loan_type")  // New field for loan type
+    private String loanType;
 
     // Constructors
     public Loan() {}
 
-    public Loan(Long id, User user, BankAccount account, double amount, double interestRate, int termInMonths) {
+    public Loan(Long id, User user, BankAccount account, double amount, double interestRate, int termInMonths, String loanType) {
         this.id = id;
         this.user = user;
         this.account = account;
         this.amount = amount;
         this.interestRate = interestRate;
         this.termInMonths = termInMonths;
+        this.loanType = loanType;
     }
 
     // Getters and Setters
@@ -56,4 +61,7 @@ public class Loan {
 
     public String getTerms() { return terms; }
     public void setTerms(String terms) { this.terms = terms; }
+
+    public String getLoanType() { return loanType; }
+    public void setLoanType(String loanType) { this.loanType = loanType; }
 }

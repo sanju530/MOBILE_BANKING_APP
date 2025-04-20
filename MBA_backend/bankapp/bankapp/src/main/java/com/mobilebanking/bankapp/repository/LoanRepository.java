@@ -8,4 +8,5 @@ import java.util.Optional;
 @Repository
 public interface LoanRepository extends JpaRepository<Loan, Long> {
     Optional<Loan> findByAccountId(Long accountId);
+    boolean existsByAccountUserId(Long userId);
 }

@@ -128,7 +128,7 @@ const DashboardScreen = () => {
             </TouchableOpacity>
             <Image source={require('../../assets/logo.jpeg')} style={styles.logo} />
             <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-              <Text style={styles.notificationIcon}>🔔</Text>
+              <Text style={styles.notificationIcon}></Text>
             </TouchableOpacity>
           </View>
           <View style={styles.welcomeSection}>
