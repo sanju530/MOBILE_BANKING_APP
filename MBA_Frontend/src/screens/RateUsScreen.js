@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 const RateUsScreen = () => {
   const [rating, setRating] = useState(0);
 
-  const handleRate = (stars) => {
+  const handleRate = async (stars) => {
     setRating(stars);
-    alert(`Thank you for rating us ${stars} stars!`);
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        Alert.alert('Error', 'User not logged in');
+        return;
+      }
+      const payload = { userId: parseInt(userId), rating: stars };
+      const response = await api.post('/api/rating', payload);
+      Alert.alert('Success', response.data);
+    } catch (error) {
+      console.error('Rating error:', error.response ? error.response.data : error.message);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to submit rating');
+    }
   };
 
   return (

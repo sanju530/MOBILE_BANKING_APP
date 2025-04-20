@@ -18,6 +18,7 @@ import ReceiveMoneyScreen from './src/screens/ReceiveMoneyScreen';
 import FeedbackScreen from './src/screens/FeedbackScreen';
 import RateUsScreen from './src/screens/RateUsScreen';
 import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
+import BillPaymentScreen from './src/screens/BillPaymentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +45,11 @@ const App = () => {
           name="Accounts"
           component={AccountsScreen}
           options={{ title: 'My Accounts' }}
+        />
+        <Stack.Screen 
+          name="BillPayment" 
+          component={BillPaymentScreen} 
+          options={{title:'BillPayment'}}
         />
         <Stack.Screen
           name="AddAccount"

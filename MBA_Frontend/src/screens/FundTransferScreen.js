@@ -19,7 +19,6 @@ const FundTransferScreen = () => {
       >
         <Text style={styles.buttonText}>Transfer to Others</Text>
       </TouchableOpacity>
-      
     </View>
   );
 };

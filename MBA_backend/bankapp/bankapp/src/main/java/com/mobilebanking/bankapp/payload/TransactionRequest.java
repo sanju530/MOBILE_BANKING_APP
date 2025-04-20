@@ -7,8 +7,12 @@ public class TransactionRequest {
     private double amount;
     private String transactionType;
     private String upiId;
+    private String billingType; // New field
+    private String customerId;  // For electricity
+    private String propertyName; // For rent
+    private String rrNumber;    // For water
 
-    // Getters & Setters
+    // Getters and Setters
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
     public String getFromAccountNumber() { return fromAccountNumber; }
@@ -21,4 +25,12 @@ public class TransactionRequest {
     public void setTransactionType(String transactionType) { this.transactionType = transactionType; }
     public String getUpiId() { return upiId; }
     public void setUpiId(String upiId) { this.upiId = upiId; }
+    public String getBillingType() { return billingType; }
+    public void setBillingType(String billingType) { this.billingType = billingType; }
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getPropertyName() { return propertyName; }
+    public void setPropertyName(String propertyName) { this.propertyName = propertyName; }
+    public String getRrNumber() { return rrNumber; }
+    public void setRrNumber(String rrNumber) { this.rrNumber = rrNumber; }
 }
